@@ -25,23 +25,59 @@ For data preparation and preprocessing, please refer to Stages 1 and 2 of [GFM-R
 
 ### Reproduce results
 
+####
 ```
-python -m gfmrag.workflow.stage3_qa_inference
-```
-
-```
-python -m gfmrag.workflow.stage3_qa_ircot_inference
+LLM="gpt-4o-mini" # or "gpt-5-mini"
+DATA_NAME="hotpotqa" # or "musique" or "2wikimultihopqa"
 ```
 
-```
-python -m gfmrag.workflow.stage3_qa_inference_mcp
-```
+#### GFM-RAG Baseline
 
 ```
-python -m gfmrag.workflow.stage3_qa_inference_mcp_augment
+python -m gfmrag.workflow.stage3_qa_inference \
+llm.model_name_or_path=${LLM} \
+qa_prompt=${DATA_NAME} \
+qa_evaluator=${DATA_NAME} \
+dataset.data_name=${DATA_NAME}_test
 ```
 
+#### GFM-RAG + IRCoT Baseline
+```
+python -m gfmrag.workflow.stage3_qa_ircot_inference \
+llm.model_name_or_path=${LLM} \
+qa_prompt=${DATA_NAME} \
+qa_evaluator=${DATA_NAME} \
+dataset.data_name=${DATA_NAME}_test
+```
 
+#### AG-RAG
+```
+python -m gfmrag.workflow.stage3_qa_inference_mcp \ 
+llm.model_name_or_path=${LLM} \
+qa_prompt=${DATA_NAME} \
+qa_evaluator=${DATA_NAME} \
+dataset.data_name=${DATA_NAME}_test
+```
+
+#### AG-RAG augment QA
+```
+python -m gfmrag.workflow.stage3_qa_inference_mcp_augment \
+test.mode=augment_qa \
+llm.model_name_or_path=${LLM} \
+qa_prompt=${DATA_NAME} \
+qa_evaluator=${DATA_NAME} \
+dataset.data_name=${DATA_NAME}_test
+```
+
+#### AG-RAG batch QA
+```
+python -m gfmrag.workflow.stage3_qa_inference_mcp_augment \
+test.mode=batch_qa \
+llm.model_name_or_path=${LLM} \
+qa_prompt=${DATA_NAME} \
+qa_evaluator=${DATA_NAME} \
+dataset.data_name=${DATA_NAME}_test
+```
 
 ## Acknowledgements
 
