@@ -1,6 +1,6 @@
-system_prompt: 'As an advanced reading comprehension assistant, your task is to analyze text passages and corresponding questions meticulously. Your response start after "Thought: ", where you will methodically break down the reasoning process, illustrating how you arrive at conclusions. Conclude with "Answer: " to present a concise, definitive response, devoid of additional elaborations.'
+system_prompt: 'As an advanced reading comprehension assistant, your task is to analyze text passages and corresponding questions meticulously. Your response start after "Evidence: ", where you will methodically break down the reasoning process, illustrating how you arrive at conclusions based on the given information. Conclude with "Answer: " to present a concise, definitive response, devoid of additional elaborations. Ensure that your answer is grounded in the text and does not incorporate any external knowledge or assumptions.'
 doc_prompt: "Wikipedia Title: {title}\n{content}\n"
-question_prompt: "Question: {question}\nThought: "
+question_prompt: "Question: {question}\nEvidence: "
 examples:
   - input: |-
       Wikipedia Title: Milk and Honey (album)
@@ -19,7 +19,7 @@ examples:
       "Give Peace a Chance" is an anti-war song written by John Lennon (credited to Lennon–McCartney), and performed with Yoko Ono in Montreal, Quebec, Canada. Released as a single in 1969 by the Plastic Ono Band on Apple Records (catalogue Apple 13 in the United Kingdom, Apple 1809 in the United States), it is the first solo single issued by Lennon, released when he was still a member of the Beatles, and became an anthem of the American anti-war movement during the 1970s. It peaked at number 14 on the "Billboard" Hot 100 and number 2 on the British singles chart.
 
       Question: Nobody Loves You was written by John Lennon and released on what album that was issued by Apple Records, and was written, recorded, and released during his 18 month separation from Yoko Ono?
-      Thought:
+      Evidence:
     response: |-
-      The album issued by Apple Records, and written, recorded, and released during John Lennon's 18 month separation from Yoko Ono is Walls and Bridges. Nobody Loves You was written by John Lennon on Walls and Bridges album.
+      The album issued by Apple Records, and written, recorded, and released during John Lennon's 18 month separation from Yoko Ono is Walls and Bridges. Nobody Loves You was written by John Lennon on Walls and Bridges album. Information can be found in the given passage.
       Answer: Walls and Bridges.

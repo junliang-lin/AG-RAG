@@ -18,28 +18,19 @@ dotenv.load_dotenv()
 
 os.environ["TIKTOKEN_CACHE_DIR"] = "./tmp"
 
-OPENAI_MODEL = ["gpt-4", "gpt-3.5-turbo"]
+# OPENAI_MODEL = ["gpt-4.1-mini", "gpt-4o-mini", "gpt-5-mini", "gpt-5-nano"]
 
 
 def get_token_limit(model: str = "gpt-4") -> int:
     """Returns the token limitation of provided model"""
-    if model in ["gpt-4", "gpt-4-0613"]:
-        num_tokens_limit = 8192
-    elif model in ["gpt-4o", "gpt-4o-mini", "gpt-4-turbo"]:
+    if model in ["gpt-4.1-mini", "gpt-4o-mini", "gpt-5-mini", "gpt-5-nano"]:
         num_tokens_limit = 128000
-    elif model in ["gpt-3.5-turbo-16k", "gpt-3.5-turbo-16k-0613"]:
-        num_tokens_limit = 16384
-    elif model in [
-        "gpt-3.5-turbo",
-        "gpt-3.5-turbo-0613",
-        "text-davinci-003",
-        "text-davinci-002",
-    ]:
-        num_tokens_limit = 4096
     else:
-        raise NotImplementedError(
-            f"""get_token_limit() is not implemented for model {model}."""
-        )
+        num_tokens_limit = 128000
+    # else:
+    #     raise NotImplementedError(
+    #         f"""get_token_limit() is not implemented for model {model}."""
+    #     )
     return num_tokens_limit
 
 
@@ -78,12 +69,16 @@ class ChatGPT(BaseLanguageModel):
                 "OPENAI_API_KEY"
             ],  # this is also the default, it can be omitted
         )
+        # client = OpenAI(
+        #     base_url="https://openrouter.ai/api/v1",
+        #     api_key="",
+        # )
         self.client = client
 
     def token_len(self, text: str) -> int:
         """Returns the number of tokens used by a list of messages."""
         try:
-            encoding = tiktoken.encoding_for_model(self.model_name)
+            encoding = tiktoken.encoding_for_model('gpt-4o-mini')
             num_tokens = len(encoding.encode(text))
         except KeyError as e:
             raise KeyError(f"Warning: model {self.model_name} not found.") from e
@@ -138,10 +133,33 @@ class ChatGPT(BaseLanguageModel):
         while cur_retry <= num_retry:
             try:
                 response = self.client.chat.completions.create(
-                    model=self.model_name, messages=message, timeout=60, temperature=0.0
+                    model=self.model_name, 
+                    messages=message, 
+                    timeout=60, 
+                    temperature=1.0,
+                    # top_p=0.95,
+                    # presence_penalty=1.5,
+                    # extra_body={
+                    #     "top_k": 20,
+                    # }, 
+                    # temperature = 1.0,
+                    reasoning_effort="low",
                 )
                 result = response.choices[0].message.content.strip()  # type: ignore
-                return result
+                if hasattr(response.usage, "completion_tokens_details") and response.usage.completion_tokens_details:
+                    details = response.usage.completion_tokens_details
+                    if hasattr(details, "reasoning_tokens") and details.reasoning_tokens:
+                        thinking_tokens = details.reasoning_tokens
+                    else:
+                        thinking_tokens = 0
+                # logger.info(f"input tokens: {response.usage.prompt_tokens}, output tokens: {response.usage.completion_tokens}, thinking tokens: {thinking_tokens}, total tokens: {response.usage.total_tokens}")
+                token_statistics = {
+                    "input_tokens": response.usage.prompt_tokens,
+                    "output_tokens": response.usage.completion_tokens,
+                    "thinking_tokens": thinking_tokens,
+                    "total_tokens": response.usage.total_tokens,
+                }
+                return result, token_statistics
             except Exception as e:
                 logger.error("Message: ", llm_input)
                 logger.error("Number of token: ", self.token_len(message_string))

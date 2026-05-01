@@ -17,6 +17,7 @@ from gfmrag import utils
 from gfmrag.datasets import QADataset
 from gfmrag.prompt_builder import QAPromptBuilder
 from gfmrag.ultra import query_utils
+import time
 
 # A logger for this file
 logger = logging.getLogger(__name__)
@@ -54,7 +55,12 @@ def doc_retrieval(
     all_predictions: list[dict] = []
     for batch in tqdm(test_loader):
         batch = query_utils.cuda(batch, device=device)
+        # torch.cuda.synchronize()
+        t1 = time.time()
         ent_pred = model(graph, batch, entities_weight=entities_weight)
+        # torch.cuda.synchronize()
+        t2 = time.time()
+        # print(f"Entity prediction time: {t2 - t1:.4f} seconds")
         doc_pred = doc_ranker(ent_pred)  # Ent2docs mapping
         idx = batch["sample_id"]
         all_predictions.extend(
@@ -89,15 +95,24 @@ def ans_prediction(
 
     def predict(qa_input: tuple[dict, torch.Tensor]) -> dict | Exception:
         data, retrieval_doc = qa_input
+
+        t_ent = time.time()
         retrieved_ent_idx = torch.topk(
             retrieval_doc["ent_pred"], cfg.test.save_top_k_entity, dim=-1
         ).indices
         retrieved_ent = [id2ent[i.item()] for i in retrieved_ent_idx]
+        ent_retrieval_ms = (time.time() - t_ent) * 1000
+
+        t_doc = time.time()
         retrieved_docs = doc_retriever(retrieval_doc["doc_pred"], top_k=cfg.test.top_k)
+        doc_retrieval_ms = (time.time() - t_doc) * 1000
 
         message = prompt_builder.build_input_prompt(data["question"], retrieved_docs)
 
-        response = llm.generate_sentence(message)
+        t_llm = time.time()
+        response, token_statistics = llm.generate_sentence(message)
+        llm_ms = (time.time() - t_llm) * 1000
+
         if isinstance(response, Exception):
             return response
         else:
@@ -111,7 +126,18 @@ def ans_prediction(
                 "response": response,
                 "retrieved_ent": retrieved_ent,
                 "retrieved_docs": retrieved_docs,
+                "token_statistics": token_statistics,
+                "timing_ms": {
+                    "ent_retrieval_ms": round(ent_retrieval_ms, 1),
+                    "doc_retrieval_ms": round(doc_retrieval_ms, 1),
+                    "llm_ms": round(llm_ms, 1),
+                },
             }
+
+    max_samples = cfg.test.get("max_test_samples", -1)
+    if max_samples <= 0:
+        max_samples = len(test_data)
+    test_data, retrieval_result = test_data[:max_samples], retrieval_result[:max_samples]
 
     with open(os.path.join(output_dir, "prediction.jsonl"), "w") as f:
         with ThreadPool(cfg.test.n_threads) as pool:

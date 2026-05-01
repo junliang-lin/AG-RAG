@@ -5,21 +5,21 @@ hydra:
 defaults:
   - _self_
   - doc_ranker: idf_topk_ranker # The document ranker to use
-  - agent_prompt: hotpotqa_ircot # The agent prompt to use
-  - qa_prompt: hotpotqa # The QA prompt to use
+  - agent_prompt: 2wikimultihopqa_ircot # The agent prompt to use
+  - qa_prompt: 2wikimultihopqa # The QA prompt to use
   - ner_model: llm_ner_model # The NER model to use
   - el_model: colbert_el_model # The EL model to use
-  - qa_evaluator: hotpotqa # The QA evaluator to use
+  - qa_evaluator: 2wikimultihopqa # The QA evaluator to use
 
 seed: 1024
 
 dataset:
-  root: ./data # data root directory
-  data_name: hotpotqa_test # data name
+  root: ../data/Test/ # data root directory
+  data_name: 2wikimultihopqa_test # data name
 
 llm:
   _target_: gfmrag.llms.ChatGPT # The language model to use
-  model_name_or_path: gpt-3.5-turbo # The model name or path
+  model_name_or_path: gpt-5-mini # The model name or path
   retry: 5 # Number of retries
 
 graph_retriever:
@@ -32,6 +32,6 @@ graph_retriever:
 
 test:
   top_k: 10 # Number of documents to retrieve
-  max_steps: 2 # Maximum number of steps
-  max_test_samples: -1 # -1 for all samples
+  max_steps: 10 # Maximum number of steps
+  max_test_samples: 1000 # -1 for all samples
   resume: null # Resume from previous prediction

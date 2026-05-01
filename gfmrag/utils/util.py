@@ -26,13 +26,13 @@ def save_model_to_pretrained(
 
 
 def load_model_from_pretrained(path: str) -> tuple[torch.nn.Module, dict]:
-    config_path = cached_file(path, "config.json")
+    config_path = cached_file(path, "config.json", revision="80d952fea667c02779bb3b6cd1ee82ea05c77fe2")
     if config_path is None:
         raise FileNotFoundError(f"config.json not found in {path}")
     with open(config_path) as f:
         config = json.load(f)
     model = instantiate(config["model_config"])
-    model_path = cached_file(path, "model.pth")
+    model_path = cached_file(path, "model.pth", revision="80d952fea667c02779bb3b6cd1ee82ea05c77fe2")
     if model_path is None:
         raise FileNotFoundError(f"model.pth not found in {path}")
     state = torch.load(model_path, map_location="cpu", weights_only=True)

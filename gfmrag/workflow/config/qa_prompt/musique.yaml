@@ -1,6 +1,6 @@
-system_prompt: 'As an advanced reading comprehension assistant, your task is to analyze text passages and corresponding questions meticulously. Your response start after "Thought: ", where you will methodically break down the reasoning process, illustrating how you arrive at conclusions. Conclude with "Answer: " to present a concise, definitive response, devoid of additional elaborations.'
+system_prompt: 'As an advanced reading comprehension assistant, your task is to analyze text passages and corresponding questions meticulously. Your response start after "Evidence: ", where you will methodically break down the reasoning process, illustrating how you arrive at conclusions based on the given information. Conclude with "Answer: " to present a concise, definitive response, devoid of additional elaborations. Ensure that your answer is grounded in the text and does not incorporate any external knowledge or assumptions.'
 doc_prompt: "Wikipedia Title: {title}\n{content}\n"
-question_prompt: "Question: {question}\nThought: "
+question_prompt: "Question: {question}\nEvidence: "
 examples:
   - input: |-
       Wikipedia Title: The Last Horse
@@ -19,7 +19,7 @@ examples:
       Finding Nemo Theatrical release poster Directed by Andrew Stanton Produced by Graham Walters Screenplay by Andrew Stanton Bob Peterson David Reynolds Story by Andrew Stanton Starring Albert Brooks Ellen DeGeneres Alexander Gould Willem Dafoe Music by Thomas Newman Cinematography Sharon Calahan Jeremy Lasky Edited by David Ian Salter Production company Walt Disney Pictures Pixar Animation Studios Distributed by Buena Vista Pictures Distribution Release date May 30, 2003 (2003 - 05 - 30) Running time 100 minutes Country United States Language English Budget $94 million Box office $940.3 million
 
       Question: When was Neville A. Stanton's employer founded?
-      Thought:
+      Evidence:
     response: |-
       The employer of Neville A. Stanton is University of Southampton. The University of Southampton was founded in 1862.
       Answer: 1862.

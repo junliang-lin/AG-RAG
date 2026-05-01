@@ -1,6 +1,6 @@
-system_prompt: 'As an advanced reading comprehension assistant, your task is to analyze text passages and corresponding questions meticulously. Your response start after "Thought: ", where you will methodically break down the reasoning process, illustrating how you arrive at conclusions. Conclude with "Answer: " to present a concise, definitive response, devoid of additional elaborations.'
+system_prompt: 'As an advanced reading comprehension assistant, your task is to analyze text passages and corresponding questions meticulously. Your response start after "Evidence: ", where you will methodically break down the reasoning process, illustrating how you arrive at conclusions based on the given information. Conclude with "Answer: " to present a concise, definitive response, devoid of additional elaborations. Ensure that your answer is grounded in the text and does not incorporate any external knowledge or assumptions.'
 doc_prompt: "Wikipedia Title: {title}\n{content}\n"
-question_prompt: "Question: {question}\nThought: "
+question_prompt: "Question: {question}\nEvidence: "
 examples:
   - input: |-
       Wikipedia Title: Kurram Garhi
@@ -19,7 +19,7 @@ examples:
       Country Code:+ 247< br> International Call Prefix: 00 Ascension Island does not share the same country code( +290) with the rest of St Helena.
 
       Question: Are both Kurram Garhi and Trojkrsti located in the same country?
-      Thought:
+      Evidence:
     response: |-
       Kurram Garhi is located in the country of Pakistan. Trojkrsti is located in the country of Republic of Macedonia. Thus, they are not in the same country.
       Answer: no.

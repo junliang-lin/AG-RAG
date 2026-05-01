@@ -5,29 +5,41 @@ hydra:
 defaults:
   - _self_
   - doc_ranker: idf_topk_ranker
-  - qa_prompt: hotpotqa
-  - qa_evaluator: hotpotqa
+  - qa_prompt: 2wikimultihopqa
+  - qa_evaluator: 2wikimultihopqa
 
 seed: 1024
 
 dataset:
   root: ./data
-  data_name: hotpotqa_test
+  data_name: 2wikimultihopqa_test
+  raw_stage: stage1
 
 llm:
   _target_: gfmrag.llms.ChatGPT
-  model_name_or_path: gpt-3.5-turbo
+  model_name_or_path: gpt-4o-mini
   retry: 5
 
 graph_retriever:
   model_path: rmanluo/GFM-RAG-8M
 
 test:
-  retrieval_batch_size: 8
+  retrieval_batch_size: 5
   top_k: 5
   save_retrieval: False
   save_top_k_entity: 10
-  n_threads: 5
+  n_threads: 10 
+  enable_kg_edit: false 
+  max_steps: 10 
   retrieved_result_path: null
   prediction_result_path: null
   init_entities_weight: True
+  max_test_samples: 1000
+  mode: batch_qa
+  batch_size: 4
+  pass1_cache_file: null 
+  pass3_file: null
+  sweep:
+    param: top_k
+    values: 1
+    n_samples: 1

@@ -1,6 +1,14 @@
 import json
 import logging
 import os
+import warnings
+from multiprocessing.dummy import Pool as ThreadPool
+
+warnings.filterwarnings(
+    "ignore",
+    category=FutureWarning,
+    message=r".*torch\.cuda\.amp\.autocast.*",
+)
 
 import hydra
 from hydra.core.hydra_config import HydraConfig
@@ -16,6 +24,12 @@ from gfmrag.ultra import query_utils
 
 # A logger for this file
 logger = logging.getLogger(__name__)
+
+_TOKEN_STAT_KEYS = ("input_tokens", "output_tokens", "thinking_tokens", "total_tokens")
+
+
+def _merge_token_statistics(*stats: dict) -> dict:
+    return {k: sum(s.get(k, 0) for s in stats if s) for k in _TOKEN_STAT_KEYS}
 
 
 def agent_reasoning(
@@ -34,7 +48,7 @@ def agent_reasoning(
         message = qa_prompt_builder.build_input_prompt(
             current_query, retrieved_docs, thoughts
         )
-        response = llm.generate_sentence(message)
+        response, token_statistics = llm.generate_sentence(message)
 
         if isinstance(response, Exception):
             raise response from None
@@ -48,6 +62,7 @@ def agent_reasoning(
                 "retrieved_docs": retrieved_docs,
                 "response": response,
                 "thoughts": thoughts,
+                "token_statistics": token_statistics,
             }
         )
 
@@ -74,7 +89,15 @@ def agent_reasoning(
         retrieved_docs = retrieved_docs[: cfg.test.top_k]
 
     final_response = " ".join(thoughts)
-    return {"response": final_response, "retrieved_docs": retrieved_docs, "logs": logs}
+    merged_token_statistics = _merge_token_statistics(
+        *(log["token_statistics"] for log in logs)
+    )
+    return {
+        "response": final_response,
+        "retrieved_docs": retrieved_docs,
+        "logs": logs,
+        "token_statistics": merged_token_statistics,
+    }
 
 
 @hydra.main(
@@ -104,38 +127,65 @@ def main(cfg: DictConfig) -> None:
                     processed_data[result["id"]] = result
         except Exception as e:
             logger.error(f"Could not resume from previous prediction {e}")
-    with open(os.path.join(output_dir, "prediction.jsonl"), "w") as f:
-        for i in tqdm(range(max_samples)):
-            sample = test_data[i]
-            if i >= max_samples:
-                break
-            query = sample["question"]
+
+    samples = [test_data[i] for i in range(max_samples)]
+
+    def process_sample(sample: dict) -> dict | Exception:
+        try:
             if sample["id"] in processed_data:
-                result = processed_data[sample["id"]]
-            else:
-                result = agent_reasoning(
-                    cfg, gfmrag_retriever, llm, agent_prompt_builder, query
-                )
+                return processed_data[sample["id"]]
 
-                # Generate QA response
-                retrieved_docs = result["retrieved_docs"]
-                message = qa_prompt_builder.build_input_prompt(query, retrieved_docs)
-                qa_response = llm.generate_sentence(message)
+            query = sample["question"]
+            agent_result = agent_reasoning(
+                cfg, gfmrag_retriever, llm, agent_prompt_builder, query
+            )
 
-                result = {
-                    "id": sample["id"],
-                    "question": sample["question"],
-                    "answer": sample["answer"],
-                    "answer_aliases": sample.get(
-                        "answer_aliases", []
-                    ),  # Some datasets have answer aliases
-                    "supporting_facts": sample["supporting_facts"],
-                    "response": qa_response,
-                    "retrieved_docs": retrieved_docs,
-                    "logs": result["logs"],
-                }
-            f.write(json.dumps(result) + "\n")
-            f.flush()
+            retrieved_docs = agent_result["retrieved_docs"]
+            message = qa_prompt_builder.build_input_prompt(query, retrieved_docs)
+            qa_response, token_statistics = llm.generate_sentence(message)
+
+            if isinstance(qa_response, Exception):
+                return qa_response
+
+            merged_token_statistics = _merge_token_statistics(
+                agent_result["token_statistics"], token_statistics
+            )
+
+            return {
+                "id": sample["id"],
+                "question": sample["question"],
+                "answer": sample["answer"],
+                "answer_aliases": sample.get("answer_aliases", []),
+                "supporting_facts": sample["supporting_facts"],
+                "response": qa_response,
+                "retrieved_docs": retrieved_docs,
+                "logs": agent_result["logs"],
+                "token_statistics": merged_token_statistics,
+            }
+        except Exception as e:
+            return e
+
+    max_workers = min(10, cfg.test.get("n_threads", 20))
+
+    def write_result(f, result: dict | Exception) -> None:
+        if isinstance(result, Exception):
+            logger.error(f"Error processing sample: {result}")
+            return
+        f.write(json.dumps(result) + "\n")
+        f.flush()
+
+    with open(os.path.join(output_dir, "prediction.jsonl"), "w") as f:
+        if samples:
+            logger.info("Running first sample sequentially to warm up retriever...")
+            write_result(f, process_sample(samples[0]))
+
+        if len(samples) > 1:
+            with ThreadPool(max_workers) as pool:
+                for result in tqdm(
+                    pool.imap_unordered(process_sample, samples[1:]),
+                    total=len(samples) - 1,
+                ):
+                    write_result(f, result)
 
     result_path = os.path.join(output_dir, "prediction.jsonl")
     # Evaluation
