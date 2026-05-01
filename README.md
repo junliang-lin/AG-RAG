@@ -20,7 +20,7 @@ pip install gfmrag
 
 ### Prepare Data
 
-For data preparation and preprocessing, please refer to Stages 1 and 2 of [GFM-RAG] (https://github.com/RManLuo/gfm-rag).
+For data preparation and preprocessing, please refer to Stages 1 and 2 of [GFM-RAG](https://github.com/RManLuo/gfm-rag).
 
 
 ### Reproduce results
@@ -45,6 +45,6 @@ python -m gfmrag.workflow.stage3_qa_inference_mcp_augment
 
 ## Acknowledgements
 
-This work builds heavily on the contributions of [GFM-RAG] (https://github.com/RManLuo/gfm-rag)
+This work builds heavily on the contributions of [GFM-RAG](https://github.com/RManLuo/gfm-rag)
 
 Commit: 56149d76eadafeeaf224f9fe2bb67e42a239c7bd
